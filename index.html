@@ -3,9 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Football stats project</title>
+    
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10;
+            padding: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .header div {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px;
+            background-color: #e9ecef;
+        }
+        
+        .header div:hover {
+            background-color: #dcdcdc;
+        }
+    </style>
+    
 </head>
 <body>
-    <h1>Hello, World!</h1>
+    <div class="header">
+        <div>La Liga</div>
+        <div>Premier League</div>
+        <div>Serie A</div>
+        <div>Bundesliga</div>
+        <div>Ligue 1</div>
+    </div>
 </body>
 </html>
