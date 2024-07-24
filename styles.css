@@ -23,3 +23,19 @@ body {
 .header a:hover {
     background-color: #dcdcdc;
 }
+
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+.homepage{
+    
+    flex: 1;
+    background-color: #f4f4f4;
+    text-align: center;
+    font-size: 40px;
+
+    margin: 10px;
+}
