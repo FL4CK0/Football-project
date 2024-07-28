@@ -1,9 +1,10 @@
-function fetchJSONData() {
-    fetch("https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=Arsenal")
+async function fetchJSONData() {
+    await fetch("http://localhost:3000/api/matches", {
+        method: 'GET',
+    })
         .then((res) => {
             if (!res.ok) {
-                throw new Error
-                    (`HTTP error! Status: ${res.status}`);
+                throw new Error(`HTTP error! Status: ${res.status}`);
             }
             return res.json();
         })
@@ -12,4 +13,5 @@ function fetchJSONData() {
         .catch((error) => 
                console.error("Unable to fetch data:", error));
 }
+
 fetchJSONData();
