@@ -15,3 +15,24 @@ async function fetchJSONData() {
 }
 
 fetchJSONData();
+
+function populateTable(data) {
+
+    const {
+        matches: { //sample code, change
+        temperature_2m,
+        wind_speed_10m,
+        weather_code}} = data;
+    
+
+    const tableBody = document.querySelector('.tableBody');
+    data.matches.forEach(match => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${match.date}</td>
+            <td>${match.homeTeam} vs. ${match.awayTeam}</td>
+            <td>${match.score}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
