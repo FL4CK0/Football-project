@@ -12,7 +12,7 @@ app.use(cors());
 
 app.get('/api/matches', async (req, res) => {
     try {
-        const response = await fetch('https://api.football-data.org/v4/matches', {
+        const response = await fetch('https://api.football-data.org/v4/matches?dateFrom=2024-07-27&dateTo=2024-07-31', { //https://api.football-data.org/v4/matches?dateFrom=2024-07-29&dateTo=2024-07-31
             method: 'GET',
             headers: {
                 'X-Auth-Token': apiKey

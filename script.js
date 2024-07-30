@@ -18,11 +18,7 @@ fetchJSONData();
 
 function populateTable(data) {
 
-    const {
-        matches: { //sample code, change
-        temperature_2m,
-        wind_speed_10m,
-        weather_code}} = data;
+    
     
 
     const tableBody = document.querySelector('.tableBody');
