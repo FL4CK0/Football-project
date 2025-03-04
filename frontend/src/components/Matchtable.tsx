@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface Team {
   id: number | null;
@@ -37,40 +38,54 @@ interface MatchesData {
 
 const MatchTable: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Polling every 15 seconds
   useEffect(() => {
     const fetchMatches = () => {
+      setLoading(true);
       fetch('/api/matches')
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
           return res.json();
         })
         .then((data: MatchesData) => {
-            const sortedMatches = data.matches.sort((a, b) => {
-              const timeA = new Date(a.utcDate).getTime();
-              const timeB = new Date(b.utcDate).getTime();
-              const timeDiff = timeA - timeB;
-              if (timeDiff !== 0) return timeDiff;
+          // Make sure data.matches exists and is an array
+          if (!data.matches || !Array.isArray(data.matches)) {
+            throw new Error('Invalid data format from API');
+          }
           
-              // If utcDates are equal, sort alphabetically by homeTeam name (fallback to empty string if null)
-              const nameA = (a.homeTeam.name || "").toLowerCase();
-              const nameB = (b.homeTeam.name || "").toLowerCase();
-              if (nameA < nameB) return -1;
-              if (nameA > nameB) return 1;
+          const sortedMatches = data.matches.sort((a, b) => {
+            const timeA = new Date(a.utcDate).getTime();
+            const timeB = new Date(b.utcDate).getTime();
+            const timeDiff = timeA - timeB;
+            if (timeDiff !== 0) return timeDiff;
+        
+            // If utcDates are equal, sort alphabetically by homeTeam name
+            const nameA = (a.homeTeam.name || "").toLowerCase();
+            const nameB = (b.homeTeam.name || "").toLowerCase();
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
+        
+            // If homeTeam names are equal, sort alphabetically by awayTeam name
+            const awayA = (a.awayTeam.name || "").toLowerCase();
+            const awayB = (b.awayTeam.name || "").toLowerCase();
+            if (awayA < awayB) return -1;
+            if (awayA > awayB) return 1;
+            
+            return 0;
+          });
           
-              // If homeTeam names are equal, sort alphabetically by awayTeam name
-              const awayA = (a.awayTeam.name || "").toLowerCase();
-              const awayB = (b.awayTeam.name || "").toLowerCase();
-              if (awayA < awayB) return -1;
-              if (awayA > awayB) return 1;
-              
-              return 0;
-            });
-            setMatches(sortedMatches);
-          })
-          
-        .catch((error) => console.error('Unable to fetch data:', error));
+          setMatches(sortedMatches);
+          setLoading(false);
+          setError(null);
+        })
+        .catch((error) => {
+          console.error('Unable to fetch data:', error);
+          setError('Failed to load matches. Please try again later.');
+          setLoading(false);
+        });
     };
 
     fetchMatches();
@@ -79,14 +94,41 @@ const MatchTable: React.FC = () => {
   }, []);
 
   const getStatusText = (match: Match) => {
-    if (match.status === 'IN_PLAY') return 'In Play';
+    if (match.status === 'IN_PLAY') return 'Live';
+    if (match.status === 'PAUSED') return 'Paused';
     if (match.status === 'FINISHED') return 'Finished';
-    return new Date(match.utcDate).toLocaleDateString();
+    if (match.status === 'POSTPONED') return 'Postponed';
+    
+    // for scheduled matches format the time
+    const matchDate = new Date(match.utcDate);
+    // format HH:MM if today otherwise as date
+    const today = new Date();
+    if (matchDate.toDateString() === today.toDateString()) {
+      return matchDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return matchDate.toLocaleDateString();
   };
+
+  const getStatusClass = (match: Match) => {
+    if (match.status === 'IN_PLAY') return 'in-play';
+    if (match.status === 'FINISHED') return 'finished';
+    return 'upcoming';
+  };
+
+  if (loading && matches.length === 0) {
+    return (
+      <div className="p-8 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error && matches.length === 0) {
+    return <div className="p-8 text-center text-destructive">{error}</div>;
+  }
 
   return (
     <div className="p-4">
-      {/* Only scroll if table is too wide */}
       <div className="overflow-x-auto">
         <Table className="w-full table-fixed">
           <TableHeader>
@@ -100,84 +142,90 @@ const MatchTable: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {matches.map((match) => (
-              <TableRow key={match.id}>
-                {/* Status */}
-                <TableCell className="whitespace-nowrap px-2 py-1 text-sm">
-                  {getStatusText(match)}
-                </TableCell>
+            {matches.length > 0 ? (
+              matches.map((match) => (
+                <TableRow key={match.id} className={getStatusClass(match)}>
+                  {/* Status */}
+                  <TableCell className="px-2 py-1 text-sm">
+                    <span className="status">{getStatusText(match)}</span>
+                  </TableCell>
+                  
+                  {/* Competition */}
+                  <TableCell className="whitespace-nowrap px-2 py-1 text-sm overflow-hidden">
+                    {match.competition.emblem && (
+                      <img
+                        src={match.competition.emblem}
+                        alt={match.competition.name}
+                        className="inline-block w-4 h-4 mr-1 align-middle"
+                      />
+                    )}
+                    {match.competition.name}
+                  </TableCell>
+                  
+                  {/* Home Team */}
+                  <TableCell className="whitespace-nowrap px-2 py-1 text-sm overflow-hidden">
+                    {match.homeTeam.crest && (
+                      <img
+                        src={match.homeTeam.crest}
+                        alt={match.homeTeam.name || 'Home Team'}
+                        className="inline-block w-6 h-6 mr-1 align-middle"
+                      />
+                    )}
+                    {match.homeTeam.name || 'TBD'}
+                  </TableCell>
 
-                {/* Competition */}
-                <TableCell className="whitespace-nowrap px-2 py-1 text-sm overflow-hidden">
-                  {match.competition.emblem && (
-                    <img
-                      src={match.competition.emblem}
-                      alt={match.competition.name}
-                      className="inline-block w-4 h-4 mr-1 align-middle"
-                    />
-                  )}
-                  {match.competition.name}
-                </TableCell>
+                  {/* vs */}
+                  <TableCell className="px-2 py-1 text-center text-sm">vs</TableCell>
 
-                {/* Home Team */}
-                <TableCell className="whitespace-nowrap px-2 py-1 text-sm overflow-hidden">
-                  {match.homeTeam.crest && (
-                    <img
-                      src={match.homeTeam.crest}
-                      alt={match.homeTeam.name || 'Home Team'}
-                      className="inline-block w-6 h-6 mr-1 align-middle"
-                    />
-                  )}
-                  {match.homeTeam.name || 'TBD'}
-                </TableCell>
+                  {/* Away Team */}
+                  <TableCell className="whitespace-nowrap px-2 py-1 text-sm text-right overflow-hidden">
+                    {match.awayTeam.name || 'TBD'}
+                    {match.awayTeam.crest && (
+                      <img
+                        src={match.awayTeam.crest}
+                        alt={match.awayTeam.name || 'Away Team'}
+                        className="inline-block w-6 h-6 ml-1 align-middle"
+                      />
+                    )}
+                  </TableCell>
 
-                {/* vs */}
-                <TableCell className="px-2 py-1 text-center text-sm">vs</TableCell>
-
-                {/* Away Team */}
-                <TableCell className="whitespace-nowrap px-2 py-1 text-sm text-right overflow-hidden">
-                  {match.awayTeam.crest && (
-                    <img
-                      src={match.awayTeam.crest}
-                      alt={match.awayTeam.name || 'Away Team'}
-                      className="inline-block w-6 h-6 mr-1 align-middle"
-                    />
-                  )}
-                  {match.awayTeam.name || 'TBD'}
-                </TableCell>
-
-                {/* Score */}
-                <TableCell className="whitespace-nowrap px-2 py-1 text-center text-sm font-bold">
-                  {match.status === 'IN_PLAY' || match.status === 'FINISHED' ? (
-                    <>
-                      <span
-                        className={
-                          (match.score.fullTime.home ?? 0) >
-                          (match.score.fullTime.away ?? 0)
-                            ? 'font-extrabold text-primary'
-                            : 'text-gray-600'
-                        }
-                      >
-                        {match.score.fullTime.home ?? 'N/A'}
-                      </span>
-                      {' - '}
-                      <span
-                        className={
-                          (match.score.fullTime.away ?? 0) >
-                          (match.score.fullTime.home ?? 0)
-                            ? 'font-extrabold text-primary'
-                            : 'text-gray-600'
-                        }
-                      >
-                        {match.score.fullTime.away ?? 'N/A'}
-                      </span>
-                    </>
-                  ) : (
-                    'N/A'
-                  )}
+                  {/* Score */}
+                  <TableCell className="whitespace-nowrap px-2 py-1 text-center text-sm font-bold">
+                    {match.status === 'IN_PLAY' || match.status === 'FINISHED' ? (
+                      <>
+                        <span
+                          className={cn(
+                            (match.score.fullTime.home ?? 0) > (match.score.fullTime.away ?? 0)
+                              ? 'font-extrabold text-primary'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          {match.score.fullTime.home ?? '0'}
+                        </span>
+                        {' - '}
+                        <span
+                          className={cn(
+                            (match.score.fullTime.away ?? 0) > (match.score.fullTime.home ?? 0)
+                              ? 'font-extrabold text-primary'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          {match.score.fullTime.away ?? '0'}
+                        </span>
+                      </>
+                    ) : (
+                      'N/A'
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  No matches found for the selected time period.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

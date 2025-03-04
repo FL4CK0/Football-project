@@ -95,12 +95,17 @@ td {
   text-align: left;
 }
 
-/* Oval for status text */
+/* Fixed-size oval for status text */
 .status {
-  display: inline-block;
-  padding: 5px 15px;
-  border-radius: 20px; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px; /* Set a consistent minimum width */
+  height: 28px; /* Fixed height */
+  padding: 0 15px;
+  border-radius: 14px; /* Half of height for perfect oval */
   font-weight: bold;
+  text-align: center;
 }
 
 /* Flashing effect for live matches */
@@ -110,8 +115,21 @@ td {
   100% { background-color: #ffeb3b; } 
 }
 
+/* Dark mode flashing animation - using more visible colors in dark mode */
+@keyframes flash-dark {
+  0% { background-color: #ffd600; } 
+  50% { background-color: #ff6d00; } 
+  100% { background-color: #ffd600; } 
+}
+
+/* Live status - standard and dark mode */
 .in-play .status {
   animation: flash 2s infinite alternate;
+  color: black;
+}
+
+.dark .in-play .status {
+  animation: flash-dark 2s infinite alternate;
   color: black;
 }
 
@@ -125,6 +143,17 @@ td {
 .upcoming .status {
   background-color: #f8f9fa; 
   color: #6c757d;
+}
+
+/* Dark mode specific overrides */
+.dark .finished .status {
+  background-color: #2e7d32; /* Slightly brighter green for dark mode */
+  color: white;
+}
+
+.dark .upcoming .status {
+  background-color: #444444; /* Darker gray for better visibility */
+  color: #e0e0e0; /* Lighter text for better contrast */
 }
 
 :root {
